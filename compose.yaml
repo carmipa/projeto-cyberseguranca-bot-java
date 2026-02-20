@@ -1,1 +1,41 @@
-services: { }
+services:
+  bot:
+    # Indica que a imagem deve ser construída localmente, evitando erros de 'pull'
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cyberbot-carminati:latest
+    container_name: projeto-cyberseguranca-bot-java
+    restart: unless-stopped
+
+    # Redundância de Rede (Essencial para o JDA manter o WebSocket estável)
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+
+    # Carrega suas credenciais sensíveis (Token e Channel ID)
+    env_file:
+      - .env
+
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DATA_DIR=/app/data
+      # Variável para o Spring Boot 4 ignorar o gerenciamento automático deste container no boot
+      - SPRING_DOCKER_COMPOSE_ENABLED=false
+
+    # Persistência de Auditoria e Logs para seu desktop
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+
+    # Controle de GRC: Impede que logs infinitos consumam seu SSD
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    labels:
+      com.cyberbot.description: "Cybersecurity GRC Bot Java 25"
+      com.cyberbot.version: "1.0.0"
+      com.carminati.profile: "analista-cyber"
