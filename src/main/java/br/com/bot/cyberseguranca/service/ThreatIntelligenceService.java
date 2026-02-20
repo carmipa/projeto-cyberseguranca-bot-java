@@ -117,6 +117,8 @@ public class ThreatIntelligenceService {
             AlertaSeguranca nova = new AlertaSeguranca(id, titulo, severidade, "NEW", LocalDateTime.now(), desc);
             vulnerabilityService.adicionarVulnerabilidade(nova);
             enviarNotificacao(nova);
+        } else {
+            System.out.println("📋 [IDEMPOTÊNCIA] Registros já existem em vulnerabilidades.json para id: " + id);
         }
     }
 

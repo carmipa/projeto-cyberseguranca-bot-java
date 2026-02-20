@@ -7,6 +7,7 @@ import br.com.bot.cyberseguranca.service.VulnerabilityService;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -17,14 +18,16 @@ public class CommandListener extends ListenerAdapter {
     private final VulnerabilityService vulnerabilityService;
     private final ThreatIntelligenceService threatIntelService;
     private final BotConfigService configService;
-    private final String OWNER_ID = "SEU_ID_AQUI"; // ID do desenvolvedor Paulo André Carminati
+    private final String ownerId;
 
     public CommandListener(VulnerabilityService vulnerabilityService,
                            ThreatIntelligenceService threatIntelService,
-                           BotConfigService configService) {
+                           BotConfigService configService,
+                           @Value("${discord.owner.id:SEU_ID_AQUI}") String ownerId) {
         this.vulnerabilityService = vulnerabilityService;
         this.threatIntelService = threatIntelService;
         this.configService = configService;
+        this.ownerId = ownerId != null && !ownerId.isBlank() ? ownerId : "SEU_ID_AQUI";
     }
 
     @Override
@@ -84,7 +87,7 @@ public class CommandListener extends ListenerAdapter {
     // --- MÉTODOS DE APOIO ---
 
     private void handleAdminPanel(SlashCommandInteractionEvent event) {
-        if (!event.getUser().getId().equals(OWNER_ID)) {
+        if (!event.getUser().getId().equals(ownerId)) {
             System.err.println("🚨 [HONEYPOT] Tentativa de acesso não autorizada ao Admin Panel por: " + event.getUser().getName());
             event.reply("❌ **Acesso Negado.** Esta tentativa foi registrada na trilha de auditoria.").setEphemeral(true).queue();
         } else {
