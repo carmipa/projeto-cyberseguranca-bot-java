@@ -11,10 +11,14 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
+
 @Configuration
+@Profile("!test")
 public class DiscordConfig {
 
     @Bean
@@ -25,18 +29,14 @@ public class DiscordConfig {
     }
 
     /**
-     * Configuração do RestTemplate com Timeouts (GRC Best Practices)
+     * Configuração do RestTemplate com Timeouts (GRC Best Practices).
+     * Fontes lentas (ex.: Exploit-DB) não derrubam o bot.
      */
     @Bean
     public RestTemplate restTemplate() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-
-        // Timeout de conexão (10 segundos)
-        factory.setConnectTimeout(10000);
-
-        // Timeout de leitura de dados (10 segundos)
-        factory.setReadTimeout(10000);
-
+        factory.setConnectTimeout(Duration.ofSeconds(10));
+        factory.setReadTimeout(Duration.ofSeconds(10));
         return new RestTemplate(factory);
     }
 
