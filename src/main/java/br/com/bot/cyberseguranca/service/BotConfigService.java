@@ -13,23 +13,16 @@ public class BotConfigService {
     @Value("${DISCORD_CHANNEL_ID}")
     private String channelId;
 
-    /**
-     * Recupera o Token com validação de segurança.
-     * Em conformidade com GRC, impede a inicialização sem credenciais.
-     */
     public String getToken() {
-        if (token == null || token.isBlank() || token.contains("seu_token")) {
-            throw new ConfigurationException("DISCORD_TOKEN ausente ou inválido nas variáveis de ambiente.");
+        if (token == null || token.isBlank() || token.equals("seu_token_aqui")) {
+            throw new ConfigurationException("DISCORD_TOKEN inválido ou ausente no .env");
         }
         return token;
     }
 
-    /**
-     * Recupera o ID do canal de auditoria.
-     */
     public String getChannelId() {
         if (channelId == null || channelId.isBlank()) {
-            throw new ConfigurationException("DISCORD_CHANNEL_ID não configurado. O bot não saberá onde reportar.");
+            throw new ConfigurationException("DISCORD_CHANNEL_ID não configurado no .env");
         }
         return channelId;
     }

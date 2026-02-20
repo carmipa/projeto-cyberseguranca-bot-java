@@ -1,34 +1,66 @@
 package br.com.bot.cyberseguranca.config;
 
-import br.com.bot.cyberseguranca.exception.ConfigurationException;
+import br.com.bot.cyberseguranca.listener.CommandListener;
 import br.com.bot.cyberseguranca.service.BotConfigService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import java.util.concurrent.Executors;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestTemplate;
+
+import java.time.Duration;
 
 @Configuration
 public class DiscordConfig {
 
     @Bean
-    public JDA jda(BotConfigService configService) {
-        try {
-            // Java 25: Otimização com Virtual Threads para performance máxima
-            var executor = Executors.newThreadPerTaskExecutor(
-                    Thread.ofVirtual().name("jda-virtual-thread-", 0).factory()
-            );
+    public ObjectMapper objectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        return mapper;
+    }
 
-            return JDABuilder.createDefault(configService.getToken())
-                    .enableIntents(GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES)
-                    .setEventPool(executor)
-                    .build();
+    /**
+     * Configuração do RestTemplate com Timeouts (GRC Best Practices)
+     */
+    @Bean
+    public RestTemplate restTemplate() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
 
-        } catch (ConfigurationException e) {
-            // Em Cybersecurity, falhas de config são críticas
-            System.err.println("FATAL: Falha na inicialização do Bot - " + e.getMessage());
-            throw e;
-        }
+        // Timeout de conexão (10 segundos)
+        factory.setConnectTimeout(10000);
+
+        // Timeout de leitura de dados (10 segundos)
+        factory.setReadTimeout(10000);
+
+        return new RestTemplate(factory);
+    }
+
+    @Bean
+    public JDA jda(BotConfigService configService, CommandListener commandListener) {
+        JDA jda = JDABuilder.createDefault(configService.getToken())
+                .enableIntents(GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES)
+                .addEventListeners(commandListener)
+                .build();
+
+        // Registro dos Slash Commands
+        jda.updateCommands().addCommands(
+                Commands.slash("check", "Realiza a auditoria de vulnerabilidades GRC"),
+                Commands.slash("add", "Registra uma nova vulnerabilidade")
+                        .addOption(OptionType.STRING, "id", "ID da vulnerabilidade", true)
+                        .addOption(OptionType.STRING, "titulo", "Título do alerta", true)
+                        .addOption(OptionType.STRING, "severidade", "CRITICA, ALTA, MEDIA", true)
+                        .addOption(OptionType.STRING, "descricao", "Detalhes técnicos", true),
+                Commands.slash("delete", "Remove uma vulnerabilidade da base")
+                        .addOption(OptionType.STRING, "id", "ID para remoção", true)
+        ).queue();
+
+        return jda;
     }
 }
